@@ -13,22 +13,44 @@ NOMBRES_FAMILIA = [
     "Sandra", "Alejandro", "Brenda"
 ]
 
+
 def guardar_estado(estado):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(estado, f, ensure_ascii=False, indent=2)
+
 
 def cargar_estado():
     # Crea el archivo por primera vez si no existe
     if not os.path.exists(DATA_FILE):
         estado_inicial = {
             "participantes": NOMBRES_FAMILIA,
-            "asignaciones": {}  # {"Miguel": "Papá Luis", ...}
+            "asignaciones": {}
         }
         guardar_estado(estado_inicial)
         return estado_inicial
 
     with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        estado = json.load(f)
+
+    # 🔥 Si la lista del archivo es distinta a la actual, la sincronizamos
+    if estado.get("participantes") != NOMBRES_FAMILIA:
+        asignaciones = estado.get("asignaciones", {})
+
+        # Limpiar asignaciones de personas que ya no existen
+        asignaciones_limpias = {
+            quien: a_quien
+            for quien, a_quien in asignaciones.items()
+            if quien in NOMBRES_FAMILIA and a_quien in NOMBRES_FAMILIA
+        }
+
+        estado = {
+            "participantes": NOMBRES_FAMILIA,
+            "asignaciones": asignaciones_limpias
+        }
+        guardar_estado(estado)
+
+    return estado
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -76,6 +98,7 @@ def index():
         error=mensaje_error
     )
 
+
 @app.route("/admin")
 def admin():
     """
@@ -105,10 +128,12 @@ def admin():
             duplicados.append(p)
     duplicados = list(set(duplicados))
 
-    todo_completo = (len(asignaciones) == len(participantes)
-                     and len(ya_fueron_regalo) == len(set(ya_fueron_regalo))
-                     and len(faltan_por_jugar) == 0
-                     and len(no_son_regalo) == 0)
+    todo_completo = (
+        len(asignaciones) == len(participantes)
+        and len(ya_fueron_regalo) == len(set(ya_fueron_regalo))
+        and len(faltan_por_jugar) == 0
+        and len(no_son_regalo) == 0
+    )
 
     return render_template(
         "admin.html",
@@ -122,6 +147,7 @@ def admin():
         duplicados=duplicados,
         todo_completo=todo_completo
     )
+
 
 if __name__ == "__main__":
     # 0.0.0.0 para que entren desde otros dispositivos en tu red
