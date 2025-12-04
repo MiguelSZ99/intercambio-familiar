@@ -139,6 +139,8 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      const STORAGE_KEY = "intercambioFamiliarResultado_v3";
+
       const dataDiv = document.getElementById("intercambio-data");
       const seleccionadoServidor = dataDiv ? (dataDiv.dataset.seleccionado || "") : "";
       const resultadoServidor = dataDiv ? (dataDiv.dataset.resultado || "") : "";
@@ -146,11 +148,11 @@
       // Si el servidor acaba de devolver algo, lo guardamos en este dispositivo
       if (seleccionadoServidor && resultadoServidor) {
         const data = { nombre: seleccionadoServidor, resultado: resultadoServidor };
-        localStorage.setItem("intercambioFamiliarResultado", JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
 
-      // Leer lo que haya guardado en ESTE dispositivo
-      const guardadoRaw = localStorage.getItem("intercambioFamiliarResultado");
+      // Leer lo que haya guardado en ESTE dispositivo (v3)
+      const guardadoRaw = localStorage.getItem(STORAGE_KEY);
       let guardado = null;
 
       if (guardadoRaw) {

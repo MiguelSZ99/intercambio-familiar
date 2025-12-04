@@ -5,7 +5,8 @@ import random
 
 app = Flask(__name__)
 
-DATA_FILE = "estado_intercambio.json"
+DATA_FILE = "estado_intercambio_v3.json"
+
 
 NOMBRES_FAMILIA = [
     "Miguel", "Mamá", "Papá Luis", "Abuelita Maria", "Luis Consentido",
