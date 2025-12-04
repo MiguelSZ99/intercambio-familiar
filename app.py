@@ -5,8 +5,10 @@ import random
 
 app = Flask(__name__)
 
+# Archivo donde se guardará el estado del intercambio
 DATA_FILE = "estado_intercambio.json"
 
+# Lista actual de participantes SIN AARON
 NOMBRES_FAMILIA = [
     "Miguel", "Mamá", "Papá Luis", "Abuelita Maria", "Luis Consentido",
     "Daniela", "Efrain", "Karla", "Mariana",
@@ -20,7 +22,7 @@ def guardar_estado(estado):
 
 
 def cargar_estado():
-    # Crea el archivo por primera vez si no existe
+    # Si no existe el archivo, se crea uno desde cero
     if not os.path.exists(DATA_FILE):
         estado_inicial = {
             "participantes": NOMBRES_FAMILIA,
@@ -29,14 +31,17 @@ def cargar_estado():
         guardar_estado(estado_inicial)
         return estado_inicial
 
+    # Leer archivo existente
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         estado = json.load(f)
 
-    # 🔥 Si la lista del archivo es distinta a la actual, la sincronizamos
+    # 🔥 SINCRONIZACIÓN AUTOMÁTICA:
+    # Si la lista del archivo es distinta a la actual, la corregimos.
     if estado.get("participantes") != NOMBRES_FAMILIA:
+
         asignaciones = estado.get("asignaciones", {})
 
-        # Limpiar asignaciones de personas que ya no existen
+        # Quitar asignaciones de gente que ya no está en la lista
         asignaciones_limpias = {
             quien: a_quien
             for quien, a_quien in asignaciones.items()
@@ -44,9 +49,10 @@ def cargar_estado():
         }
 
         estado = {
-            "participantes": NOMBRES_FAMILIA,
+            "participantes": NOMBRES_FAMILIA,  # nueva lista sin Aaron
             "asignaciones": asignaciones_limpias
         }
+
         guardar_estado(estado)
 
     return estado
@@ -68,14 +74,14 @@ def index():
         if not seleccionado or seleccionado not in participantes:
             mensaje_error = "Selecciona un nombre válido."
         else:
-            # Si ya tenía asignación, se muestra la misma
+            # Si ya tenía asignación, se respeta la misma
             if seleccionado in asignaciones:
                 resultado = asignaciones[seleccionado]
             else:
-                # Personas que ya fueron elegidas por alguien más
+                # Personas ya asignadas a alguien
                 ya_asignados = set(asignaciones.values())
 
-                # Candidatos que quedan libres y que no sea él mismo
+                # Lista de candidatos válidos
                 candidatos = [
                     p for p in participantes
                     if p not in ya_asignados and p != seleccionado
@@ -102,31 +108,20 @@ def index():
 @app.route("/admin")
 def admin():
     """
-    Vista para que TÚ veas todos los resultados del intercambio.
-    No compartas este link con la familia si no quieres que vean todo.
+    Vista secreta para que tú veas todos los resultados del intercambio.
+    No compartas este link con la familia.
     """
     estado = cargar_estado()
     participantes = estado["participantes"]
     asignaciones = estado["asignaciones"]
 
-    # Quién ya jugó (clave del dict)
     ya_jugaron = list(asignaciones.keys())
-
-    # Quién falta por jugar (no está en asignaciones)
     faltan_por_jugar = [p for p in participantes if p not in asignaciones]
-
-    # Quién ya le tocó a alguien (values del dict)
     ya_fueron_regalo = list(asignaciones.values())
-
-    # Quién NO ha sido regalo de nadie (por si hay desbalance)
     no_son_regalo = [p for p in participantes if p not in ya_fueron_regalo]
 
-    # Revisar si alguien fue asignado más de una vez (no debería pasar)
-    duplicados = []
-    for p in participantes:
-        if ya_fueron_regalo.count(p) > 1:
-            duplicados.append(p)
-    duplicados = list(set(duplicados))
+    # Buscar duplicados (alguien asignado dos veces)
+    duplicados = list({p for p in participantes if ya_fueron_regalo.count(p) > 1})
 
     todo_completo = (
         len(asignaciones) == len(participantes)
@@ -150,5 +145,4 @@ def admin():
 
 
 if __name__ == "__main__":
-    # 0.0.0.0 para que entren desde otros dispositivos en tu red
     app.run(debug=True, host="0.0.0.0", port=5000)
