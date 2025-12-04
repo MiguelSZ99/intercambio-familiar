@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{{ titulo }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 16px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .panel {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #020617;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid #1f2937;
+      padding: 8px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: #111827;
+    }
+    tr:nth-child(even) {
+      background: #020617;
+    }
+    tr:nth-child(odd) {
+      background: #030712;
+    }
+    .ok {
+      color: #22c55e;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .warn {
+      color: #facc15;
+      font-weight: 600;
+    }
+    .error {
+      color: #f97316;
+      font-weight: 600;
+    }
+    ul {
+      margin-top: 4px;
+    }
+    a {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>🎁 {{ titulo }}</h1>
+    <p style="text-align:center; font-size:0.9rem; color:#9ca3af;">
+      Vista solo para ti (organizador). No compartas este enlace si no quieres que vean todos los resultados.
+    </p>
+
+    {% if todo_completo %}
+      <div class="ok">✅ El intercambio está COMPLETO: todos tienen pareja y nadie se repite.</div>
+    {% else %}
+      <div class="warn">⚠️ Aún no está completo, revisa la información de abajo.</div>
+    {% endif %}
+
+    <h2>Asignaciones</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Participante</th>
+          <th>Le tocó</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in participantes %}
+          <tr>
+            <td>{{ p }}</td>
+            <td>
+              {% if p in asignaciones %}
+                {{ asignaciones[p] }}
+              {% else %}
+                <span class="warn">Pendiente</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h2>Resumen</h2>
+
+    <p><strong>Ya jugaron:</strong></p>
+    {% if ya_jugaron %}
+      <ul>
+        {% for p in ya_jugaron %}
+          <li>{{ p }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Nadie ha jugado todavía.</p>
+    {% endif %}
+
+    <p><strong>Faltan por jugar:</strong></p>
+    {% if faltan_por_jugar %}
+      <ul>
+        {% for p in faltan_por_jugar %}
+          <li>{{ p }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>🎉 Todos ya jugaron.</p>
+    {% endif %}
+
+    <p><strong>No han sido regalo de nadie:</strong></p>
+    {% if no_son_regalo %}
+      <ul>
+        {% for p in no_son_regalo %}
+          <li>{{ p }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Todos son regalo de alguien.</p>
+    {% endif %}
+
+    <p><strong>Personas asignadas más de una vez (error):</strong></p>
+    {% if duplicados %}
+      <ul>
+        {% for p in duplicados %}
+          <li class="error">{{ p }}</li>
+        {% endfor %}
+      </ul>
+      <p class="error">Si ves nombres aquí, conviene reiniciar el intercambio.</p>
+    {% else %}
+      <p>No hay duplicados. 👍</p>
+    {% endif %}
+
+    <p style="text-align:center; margin-top:16px;">
+      <a href="/">⬅ Volver a la vista normal</a>
+    </p>
+  </div>
+</body>
+</html>

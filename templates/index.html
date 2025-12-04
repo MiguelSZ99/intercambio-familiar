@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{{ titulo }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      max-width: 420px;
+      width: 100%;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
+    select, button {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.principal {
+      background: #e63946;
+      color: white;
+    }
+    button.principal:hover {
+      opacity: 0.9;
+    }
+    button.secundario {
+      background: #1E88E5;
+      color: white;
+    }
+    button.secundario:hover {
+      opacity: 0.9;
+    }
+    .mensaje {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+    .ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .info {
+      background: #DBEAFE;
+      color: #1D4ED8;
+    }
+    .error {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    small {
+      display: block;
+      text-align: center;
+      color: #666;
+      margin-top: 4px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card-contenido">
+    <h1>🎁 {{ titulo }}</h1>
+
+    <!-- Resultado guardado en ESTE dispositivo -->
+    <div id="resultado-guardado" class="mensaje info" style="display:none;"></div>
+
+    <form method="POST">
+      <label for="nombre">Selecciona tu nombre:</label>
+      <select id="nombre" name="nombre" required>
+        <option value="">-- Elige tu nombre --</option>
+        {% for p in participantes %}
+          <option value="{{ p }}"
+            {% if seleccionado == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="principal">Obtener a quién te toca 🎲</button>
+    </form>
+
+    {% if resultado %}
+      <div class="mensaje ok" id="mensaje-resultado">
+        🎉 ¡Listo {{ seleccionado }}!<br>
+        Te tocó: <strong>{{ resultado }}</strong>
+      </div>
+      <small>Este resultado se guardó en este dispositivo para que puedas verlo después.</small>
+
+      <button id="descargar" class="secundario">
+        📸 Descargar resultado como imagen
+      </button>
+    {% endif %}
+
+    {% if error %}
+      <div class="mensaje error">
+        ⚠️ {{ error }}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Datos que vienen del servidor, guardados como atributos data-* -->
+  <div id="intercambio-data"
+       data-seleccionado="{{ seleccionado or '' }}"
+       data-resultado="{{ resultado or '' }}"
+       style="display:none;"></div>
+
+  <!-- Librería para convertir HTML a imagen -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const dataDiv = document.getElementById("intercambio-data");
+      const seleccionadoServidor = dataDiv ? (dataDiv.dataset.seleccionado || "") : "";
+      const resultadoServidor = dataDiv ? (dataDiv.dataset.resultado || "") : "";
+
+      // Si el servidor acaba de devolver algo, lo guardamos en este dispositivo
+      if (seleccionadoServidor && resultadoServidor) {
+        const data = { nombre: seleccionadoServidor, resultado: resultadoServidor };
+        localStorage.setItem("intercambioFamiliarResultado", JSON.stringify(data));
+      }
+
+      // Leer lo que haya guardado en ESTE dispositivo
+      const guardadoRaw = localStorage.getItem("intercambioFamiliarResultado");
+      let guardado = null;
+
+      if (guardadoRaw) {
+        try {
+          guardado = JSON.parse(guardadoRaw);
+        } catch (e) {
+          console.error("No se pudo leer el resultado guardado:", e);
+        }
+      }
+
+      // Mostrar recuadro azul con el resultado guardado (si existe)
+      const divGuardado = document.getElementById("resultado-guardado");
+      if (guardado && guardado.nombre && guardado.resultado && divGuardado) {
+        divGuardado.innerHTML = `
+          📱 Resultado guardado en este dispositivo:<br>
+          <strong>${guardado.nombre}</strong> → <strong>${guardado.resultado}</strong>
+        `;
+        divGuardado.style.display = "block";
+      }
+
+      // BLOQUEAR EL FORMULARIO si ya hay resultado guardado en este dispositivo
+      const form = document.querySelector("form");
+      const select = document.getElementById("nombre");
+      const submitBtn = form ? form.querySelector("button[type='submit']") : null;
+
+      if (guardado && select && submitBtn) {
+        // Fijar el nombre que jugó
+        select.value = guardado.nombre;
+        select.disabled = true;
+
+        // Desactivar botón de jugar
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Ya tienes tu resultado 🎁";
+      }
+
+      // Lógica para descargar la tarjeta como imagen
+      const botonDescargar = document.getElementById("descargar");
+      if (botonDescargar) {
+        botonDescargar.addEventListener("click", function () {
+          const card = document.getElementById("card-contenido");
+
+          html2canvas(card).then(canvas => {
+            const link = document.createElement("a");
+
+            let nombreArchivo = "intercambio.png";
+
+            // Prioridad: nombre guardado en este dispositivo
+            if (guardado && guardado.nombre) {
+              const limpio = guardado.nombre.replace(/\s+/g, "_");
+              nombreArchivo = `intercambio_${limpio}.png`;
+            } else if (seleccionadoServidor) {
+              const limpio = seleccionadoServidor.replace(/\s+/g, "_");
+              nombreArchivo = `intercambio_${limpio}.png`;
+            }
+
+            link.download = nombreArchivo;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
