@@ -10,7 +10,7 @@ DATA_FILE = "estado_intercambio.json"
 NOMBRES_FAMILIA = [
     "Miguel", "Mamá", "Papá Luis", "Abuelita Maria", "Luis Consentido",
     "Daniela", "Efrain", "Karla", "Mariana",
-    "Sandra", "Alejandro", "Brenda", "Aaron",
+    "Sandra", "Alejandro", "Brenda"
 ]
 
 def guardar_estado(estado):
